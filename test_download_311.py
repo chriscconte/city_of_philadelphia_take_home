@@ -71,9 +71,20 @@ def test_save_data() -> None:
         assert data[2] == '123 Main St, Philadelphia, PA 19101'
         assert data[3] == '2025-01-02'
 
-        # delete the data
-        cursor.executemany("DELETE FROM public_cases_fc WHERE service_request_id = ?", [('test_1',), ('test_2',)])
-        conn.commit()
+        # add a duplicate record, should be ignored
+        data = [
+            {
+                'service_request_id': 'test_1',
+                'status': 'open',
+                'address': '123 Main St, Philadelphia, PA 19101',
+                'requested_datetime': '2025-01-01'
+            }
+        ]
+        save_data(data)
+        cursor.execute("SELECT COUNT(*) FROM public_cases_fc WHERE service_request_id = 'test_1'")
+        data = cursor.fetchall()
+        assert data[0][0] == 1
+
     logger.debug("test_save_data passed")
 
 

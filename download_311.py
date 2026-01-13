@@ -71,7 +71,7 @@ def save_data(data: list[dict]) -> None:
 
     with sqlite3.connect(sqlite_db) as conn:
         cursor = conn.cursor()
-        cursor.executemany("INSERT INTO public_cases_fc (service_request_id, status, address, requested_datetime) VALUES (?, ?, ?, ?)", data_tuples)
+        cursor.executemany("INSERT OR IGNORE INTO public_cases_fc (service_request_id, status, address, requested_datetime) VALUES (?, ?, ?, ?)", data_tuples)
         conn.commit()
 
 
