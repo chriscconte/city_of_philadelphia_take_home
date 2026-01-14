@@ -17,7 +17,7 @@ This project downloads 311 service request data, enriches it with property infor
   - SQLite: Portable, queryable, good for ~50k records
 
 ### 2. Enrich with AIS Property Data
-- [ ] Iterate through _all addresses_ in the 311 collection (~50k records, ?how many unique `address` values?)
+- [ ] Iterate through _all addresses_ in the 311 collection (~50k records, ?how many unique `address` values?) ~45k unique addresses
 - [ ] Query the AIS API using the `address` field
 - [ ] Extract and store `opa_account_num` in the local data store, keyed by address. This will be used to match the 311 tickets to the code violations, for O(1) lookup time.
 - [x] **Open questions:**
@@ -25,6 +25,8 @@ This project downloads 311 service request data, enriches it with property infor
     - Skip these records for now
   - How to handle duplicate `opa_account_num` (multiple violations at the same address)?
     - opa_account num is not a unique identifier, this is not a problem. Note that we can populate multiple tickets with the same opa_account_num, as a performance optimization.
+
+This step was taking a long time, so I have parallelized the process.
 
 ### 3. Match with Code Violations
 - [ ] Iterate through the collection again

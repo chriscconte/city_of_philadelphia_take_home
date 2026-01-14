@@ -80,9 +80,11 @@ def test_lookup_ais_success() -> None:
     logger.debug("Running test_lookup_ais_success...")
     
     address = "1400 john f kennedy blvd"
-    opa_account_num = lookup_ais(address)
+    with requests.Session() as session:
+        returned_address, opa_account_num = lookup_ais(address, session)
     
     logger.debug(f"OPA account number for '{address}': {opa_account_num}")
+    assert returned_address == address, f"Returned address should match input"
     assert opa_account_num != "", f"Should find OPA account for '{address}'"
     assert len(opa_account_num) > 0, "OPA account number should not be empty"
     
@@ -96,10 +98,11 @@ def test_lookup_ais_failure() -> None:
     logger.debug("Running test_lookup_ais_failure...")
     
     address = "None Null"
-    try:
-        opa_account_num = lookup_ais(address)
-    except requests.exceptions.RequestException as e:
-        assert True, f"Should raise an exception for invalid address '{address}'"
+    with requests.Session() as session:
+        try:
+            returned_address, opa_account_num = lookup_ais(address, session)
+        except requests.exceptions.RequestException as e:
+            assert True, f"Should raise an exception for invalid address '{address}'"
     
     logger.debug("test_lookup_ais_failure passed")
 

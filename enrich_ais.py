@@ -7,6 +7,7 @@ import logging
 import sqlite3
 from typing import Generator
 from urllib.parse import quote
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 sqlite_db = "data/311_service_requests.db"
 logging.basicConfig(level=logging.INFO)
@@ -59,21 +60,21 @@ def get_unique_addresses(batch_size: int = 1000) -> Generator[str, None, None]:
                 yield row[0]
             offset += batch_size
 
-def lookup_ais(address: str) -> str:
+def lookup_ais(address: str, session: requests.Session) -> tuple[str, str]:
     """
     Look up an address in the Philadelphia AIS API and return the OPA account number.
 
     Args:
         address: the address to look up
+        session: shared requests session for connection reuse
 
     Returns:
-        the OPA account number, or empty string if not found
+        tuple of (address, opa_account_num) - empty string if not found
     """
     encoded_address = quote(address)
     url = f"https://api.phila.gov/ais/v2/search/{encoded_address}"
-    
 
-    response = requests.get(url, timeout=10)
+    response = session.get(url, timeout=10)
     response.raise_for_status()
     data = response.json()
     
@@ -81,9 +82,41 @@ def lookup_ais(address: str) -> str:
         properties = data['features'][0].get('properties', {})
         opa_account_num = properties.get('opa_account_num', '')
         logger.debug(f"Found OPA account {opa_account_num} for {address}")
-        return opa_account_num
+        return address, opa_account_num
     else:
-        return ""
+        return address, ""
+
+
+def lookup_ais_batch(addresses: list[str], session: requests.Session, max_workers: int = 10) -> dict[str, str]:
+    """
+    Look up a batch of addresses in parallel using a shared session.
+
+    Args:
+        addresses: the addresses to look up
+        session: shared requests session for connection reuse
+        max_workers: number of parallel threads
+
+    Returns:
+        a dictionary of addresses to OPA account numbers
+    """
+    results = {}
+    
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        future_to_address = {
+            executor.submit(lookup_ais, addr, session): addr
+            for addr in addresses
+        }
+        
+        for future in as_completed(future_to_address):
+            address = future_to_address[future]
+            try:
+                addr, opa = future.result()
+                results[addr] = opa
+            except Exception as e:
+                logger.warning(f"Error looking up {address}: {e}")
+                results[address] = ""
+    
+    return results
 
 
 def save_ais_data(address: str, opa_account_num: str) -> None:
@@ -108,18 +141,30 @@ def main() -> None:
     Main function to enrich addresses with OPA account numbers.
     """
     init_ais_table()
-    addresses = get_unique_addresses()
     
-    for i, address in enumerate(addresses):
-        if i % 100 == 0:
-            logger.info(f"Processing address {i + 1}")
-        try:
-            opa_account_num = lookup_ais(address)
-            save_ais_data(address, opa_account_num)
-        except requests.exceptions.RequestException as e:
-            logger.warning(f"Error looking up {address}: {e}")
+    batch_size = 50
+    batch = []
+    total = 0
     
-    logger.info(f"Enrichment complete. Processed {i + 1} addresses.")
+    with requests.Session() as session:
+        for address in get_unique_addresses():
+            batch.append(address)
+            if len(batch) >= batch_size:
+                results = lookup_ais_batch(batch, session, max_workers=10)
+                for addr, opa in results.items():
+                    save_ais_data(addr, opa)
+                total += len(batch)
+                logger.info(f"Processed {total} addresses")
+                batch = []
+        
+        # Handle remaining addresses
+        if batch:
+            results = lookup_ais_batch(batch, session, max_workers=10)
+            for addr, opa in results.items():
+                save_ais_data(addr, opa)
+            total += len(batch)
+    
+    logger.info(f"Enrichment complete. Processed {total} addresses.")
 
 
 if __name__ == "__main__":
