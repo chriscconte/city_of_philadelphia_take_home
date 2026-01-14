@@ -17,7 +17,7 @@ This project downloads 311 service request data, enriches it with property infor
   - SQLite: Portable, queryable, good for ~50k records
 
 ### 2. Enrich with AIS Property Data
-- [ ] Iterate through _all addresses_ in the 311 collection (~50k records, ?how many unique `address` values?) ~45k unique addresses
+- [ ] Iterate through _all addresses_ in the 311 collection (~50k records, ?how many unique `address` values?) 28,388 unique addresses
 - [ ] Query the AIS API using the `address` field
 - [ ] Extract and store `opa_account_num` in the local data store, keyed by address. This will be used to match the 311 tickets to the code violations, for O(1) lookup time.
 - [x] **Open questions:**
@@ -29,9 +29,9 @@ This project downloads 311 service request data, enriches it with property infor
 This step was taking a long time, so I have parallelized the process.
 
 ### 3. Match with Code Violations
-- [ ] Iterate through the collection again
-- [ ] Use `opa_account_num` to query the property code violations dataset
-- [ ] Store matches in the local data store
+- [ ] Download the property code violations dataset
+- [ ] Store the property code violations in a local data store.
+- [ ] Write a script to match the 311 tickets to the code violations.
 - [x] **Open questions:**
     - how to handle multiple violations at the opa_account_num?
         - See below for different approaches. We will use Approach 2: each violation can 'validate' multiple tickets. Note that we can 'validate' multiple tickets with a single violation, as a performance optimization.
