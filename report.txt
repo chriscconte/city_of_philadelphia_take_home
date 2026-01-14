@@ -1,0 +1,9 @@
+311 Service Requests Report
+Generated: 2026-01-14 01:56:07
+==================================================
+
+Total Service Requests: 45,656
+
+Service Requests with Code Violations: 19,631 (43.0%)
+
+Service Requests with Status 'Open': 18,374 (40.2%)
