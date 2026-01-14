@@ -1,10 +1,17 @@
 # 311 L&I Performance Analysis
 
-A pipeline for analyzing Philadelphia 311 service requests assigned to Licenses & Inspections (L&I) and matching them against property code violations.
-
 ## Overview
 
-This project downloads 311 service request data, enriches it with property information from the AIS API, and cross-references it with code violations to generate performance metrics.
+This project downloads 311 service request data, enriches it with property information from the AIS API, and cross-references it with code violations to generate some simple metrics.
+
+This project is repeatable, and can be run with the following command:
+```
+python run_pipeline.py
+```
+
+In doing so, it will download 311 and code violation data, enrich the 311 data with property information from the AIS API, and match the 311 data to the code violation data to generate a report. Note, that it can be run with the parameter `--clean` to clean the database and start from scratch. 
+
+
 
 ## Results (Completed)
 
@@ -12,9 +19,7 @@ This project downloads 311 service request data, enriches it with property infor
 - Service Requests with Code Violations: 19,631 (43.0%)
 - Service Requests with Status 'Open': 18,374 (40.2%)
 
-The report is saved in the project root directory. The report is also printed to the console.
-
-This report is based on 2025 data.
+The report is saved in the project root directory, and is based on 2025 data.
 
 ## Technologies Used
 
@@ -51,10 +56,10 @@ I have, when possible, included the decision points I made, and the rationale fo
 - [x] Iterate through _all addresses_ in the 311 collection (~50k records, 28,388 unique addresses)
   - Again, batching to prevent putting too much into memory at once.
 - [x] Query the AIS API using the `address` field
-  - This step was taking a long time, so I have parallelized the process. 10 threads at a time allowed me to get the job done in a reasonable amount of time, while not messing with the default threading behavior of requests.
+  - This step was taking a long time, so I have parallelized the process. 10 threads at a time allowed me to get the job done in a reasonable amount of time, while not messing with the default threading behavior of requests. **Note**, I have since increased the number of threads to 300, to speed up the process. This seems to not be an issue for the AIS API.
 - [x] Extract and store `opa_account_num` in the local data store, keyed by address. This will be used to match the 311 tickets to the code violations, for O(1) lookup time.
   - I used a seperate table for this, instead of adding a column to the 311 tickets table. I think this improves readability, and there's a slight performance improvement due to the smaller table size.
-- [x] **Open questions:**
+- [x] **questions:**
   - How to handle NULL/empty address fields?
     - Skip these records for now. This is a reasonable assumption, as the 311 tickets are not assigned to a specific address, and the AIS API is not designed to handle this.
   - How to handle duplicate `opa_account_num` (multiple violations at the same address)?
@@ -167,7 +172,8 @@ city_of_philadelphia_take_home/
 4. **Rate limiting:** Does the AIS API have rate limits we need to respect?
     - No, the AIS API does not have rate limits.
 
-
+## Rate Limiting
+The AIS API does not have rate limits.  
 
 # Appendix A: Different Approaches for Matching 311 Tickets to Code Violations
 
@@ -184,19 +190,23 @@ In this case, Service Request A is not validated by the violation, as the violat
 
 If there are multiple requests at the same address, and one violation, we will count all requests as 'validated' by the violation. 
 
+```
 Service Request A: Address A, Jan 1, 2025
 Service Request B: Address A, Jan 2, 2025
 
 Violation: Address A, Jan 3, 2025
+```
 
 In this case, we would count Service Request A and Service Request B as 'validated' by the violation.
 
+```
 Service Request A: Address A, Jan 1, 2025, validated by Violation: Address A, Jan 3, 2025
 Service Request B: Address A, Jan 2, 2025, validated by Violation: Address A, Jan 3, 2025
 
 
 Total Service Requests: 2
 Total Requests with Code Violations: 2
+```
 
 This seems like a reasonable approach for this analysis, seeing as we are interested in how many tickets mapped to a violation, and not specifically which violations each ticket is mapped to. If multiple tickets are submitted for the same violation, that still counts as a 'success'.
 
@@ -205,17 +215,21 @@ This seems like a reasonable approach for this analysis, seeing as we are intere
 
 If there are multiple requests at the same address, and one violation, we will count the first request as 'validated' by the violation.
 
+```
 Service Request A: Address A, Jan 1, 2025
 Service Request B: Address A, Jan 2, 2025
 Violation: Address A, Jan 3, 2025
+```
 
 In this case, we would count Service Request A as 'validated' by the violation.
 
+```
 Service Request A: Address A, Jan 1, 2025, validated by Violation: Address A, Jan 3, 2025
 Service Request B: Address A, Jan 2, 2025, [No Match]
 
 Service Request Count: 2
 Validated Request Count: 1
+```
 
 This approach is more conservative, and more complicated. I'm not sure it's more accurate, and after talking with stakeholders, they seemed to prefer Approach 1.
 

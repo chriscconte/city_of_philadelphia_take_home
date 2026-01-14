@@ -4,6 +4,9 @@ Script to generate a summary report of 311 service requests and code violations.
 
 import sqlite3
 from datetime import datetime
+import logging
+
+logger = logging.getLogger(__name__)
 
 sqlite_db = "data/311_service_requests.db"
 report_file = "report.txt"
@@ -58,14 +61,11 @@ def main() -> None:
     """
     report = generate_report()
     
-    # Print to console
-    print(report)
-    
     # Save to file
     with open(report_file, 'w') as f:
         f.write(report)
     
-    print(f"Report saved to {report_file}")
+    logger.info(f"Report saved to {report_file}")
 
 
 if __name__ == "__main__":
