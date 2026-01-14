@@ -5,6 +5,7 @@ Script to enrich 311 service request addresses with OPA account numbers from the
 import requests
 import logging
 import sqlite3
+from typing import Generator
 from urllib.parse import quote
 
 sqlite_db = "data/311_service_requests.db"
@@ -111,14 +112,14 @@ def main() -> None:
     
     for i, address in enumerate(addresses):
         if i % 100 == 0:
-            logger.info(f"Processing address {i + 1} of {len(addresses)}")
+            logger.info(f"Processing address {i + 1}")
         try:
             opa_account_num = lookup_ais(address)
             save_ais_data(address, opa_account_num)
         except requests.exceptions.RequestException as e:
             logger.warning(f"Error looking up {address}: {e}")
     
-    logger.info(f"Enrichment complete. Processed {len(addresses)} addresses.")
+    logger.info(f"Enrichment complete. Processed {i + 1} addresses.")
 
 
 if __name__ == "__main__":
