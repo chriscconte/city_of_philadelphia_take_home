@@ -4,14 +4,17 @@ Main pipeline script to download, enrich, and generate reports for Philadelphia 
 
 import os
 import logging
-
+import sys
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+sqlite_db = "data/311_service_requests.db"
 
 
 def main() -> None:
     """
     Run the full data pipeline:
+    0. Clean database (optional)
     1. Create data folder
     2. Download 311 service requests
     3. Download violations
@@ -19,7 +22,21 @@ def main() -> None:
     5. Enrich with violation counts
     6. Generate report
     """
-    
+
+    if '--log-level' in sys.argv:
+        log_level = sys.argv[sys.argv.index('--log-level') + 1]
+        logging.getLogger().setLevel(logging.getLevelName(log_level))
+    else:
+        logging.getLogger().setLevel(logging.INFO)
+
+    clean = '--clean' in sys.argv
+
+    if clean:
+        logger.info("Cleaning database...")
+        if os.path.exists(sqlite_db):
+            os.remove(sqlite_db)
+        logger.info("Database cleaned.")
+
     # Step 1: Create data folder
     logger.info("Step 1: Creating data folder...")
     os.makedirs("data", exist_ok=True)
