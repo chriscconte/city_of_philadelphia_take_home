@@ -37,6 +37,8 @@ I have used the following tools:
 ## Future Improvements
 - Coalesce the sqlite database calls into a single ORM file. This will improve readability and maintainability of the code.
 - Some of the addresses in the 311 collection are not valid, and there is no fallback for these. I have skipped these for now, but we could look into some data cleaning techniques to handle these cases.
+- This is not a proper python package, and it could be refactored into one, with a main entry point, a folder for scripts, a folder for tests, and a folder for data. The relative imports are working as expected, but they are brittle and should be avoided.
+- I have tests written for some scripts, but not all. 
 
 ## Task List (Completed)
 
@@ -79,15 +81,11 @@ It makes more sense to download the code violations dataset, and match the opa_a
 
 ### 4. Match with Code Violations
 
-This script has an interesting decision point: how to handle multiple violations at the same opa_account_num? I have listed the different approaches I considered in the appendix. We will use Approach 2: each violation can 'validate' multiple tickets. Note that we can 'validate' multiple tickets with a single violation, as a performance optimization.
+This script has an interesting decision point: how to handle multiple violations at the same opa_account_num? I have listed the different approaches I considered in the appendix. We will use Approach 1: each violation can 'validate' multiple tickets. 
 
 - [x] Write a script to match the 311 tickets to the code violations.
-  - Again, batching to prevent putting too much into memory at once.
+  - This is entirely in sql, and is very fast.
   - I have incorporated a count of the number of violations for each ticket, to make the report more readable.
-- [x] **Open questions:**
-    - how to handle multiple violations at the opa_account_num?
-        - See below for different approaches. We will use Approach 2: each violation can 'validate' multiple tickets. Note that we can 'validate' multiple tickets with a single violation, as a performance optimization.
-
 
 ### 5. Generate Report
 - [x] Write a script to answer the following questions:
@@ -161,7 +159,7 @@ city_of_philadelphia_take_home/
 
 ```
 
-## Questions I have answered
+## Questions/Assumptions Made
 
 1. **Storage format:** What's the best storage solution for ~50k records with enrichment?
     - SQLite is a good option for a local data store for ~50k records
@@ -173,7 +171,7 @@ city_of_philadelphia_take_home/
     - No, the AIS API does not have rate limits.
 
 ## Rate Limiting
-The AIS API does not have rate limits.  
+The AIS API does not have rate limits. The carto api does, so we need to be careful to not exceed it.
 
 # Appendix A: Different Approaches for Matching 311 Tickets to Code Violations
 
