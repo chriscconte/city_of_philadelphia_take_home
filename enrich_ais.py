@@ -42,23 +42,23 @@ def get_unique_addresses(batch_size: int = 1000) -> Generator[str, None, None]:
     Yields:
         unique address strings
     """
-    with sqlite3.connect(sqlite_db) as conn:
-        cursor = conn.cursor()
-        offset = 0
-        while True:
+    while True:
+        with sqlite3.connect(sqlite_db) as conn:
+            cursor = conn.cursor()
+            # No OFFSET needed - already-enriched addresses are filtered out by the LEFT JOIN
+            # Each query returns the next batch of un-enriched addresses
             cursor.execute("""
                 SELECT DISTINCT p.address 
                 FROM public_cases_fc p
                 LEFT JOIN ais_addresses a ON p.address = a.address
                 WHERE a.address IS NULL AND p.address IS NOT NULL
-                LIMIT ? OFFSET ?
-            """, (batch_size, offset))
+                LIMIT ?
+            """, (batch_size,))
             results = cursor.fetchall()
-            if not results:
-                break
-            for row in results:
-                yield row[0]
-            offset += batch_size
+        if not results:
+            break
+        for row in results:
+            yield row[0]
 
 def lookup_ais(address: str, session: requests.Session) -> tuple[str, str]:
     """
