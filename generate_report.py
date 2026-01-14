@@ -6,7 +6,7 @@ import sqlite3
 from datetime import datetime
 
 sqlite_db = "data/311_service_requests.db"
-report_file = "data/report.txt"
+report_file = "report.txt"
 
 
 def generate_report() -> str:
