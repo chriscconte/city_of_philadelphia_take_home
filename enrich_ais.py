@@ -140,15 +140,22 @@ def main() -> None:
     """
     init_ais_table()
     
-    batch_size = 50
+    batch_size = 300
     batch = []
     total = 0
+
+    
     
     with requests.Session() as session:
+
+        # Configure connection pool to match max_workers
+        adapter = requests.adapters.HTTPAdapter(pool_connections=300, pool_maxsize=300)
+        session.mount("https://", adapter)
+
         for address in get_unique_addresses():
             batch.append(address)
             if len(batch) >= batch_size:
-                results = lookup_ais_batch(batch, session, max_workers=10)
+                results = lookup_ais_batch(batch, session, max_workers=300)
                 for addr, opa in results.items():
                     save_ais_data(addr, opa)
                 total += len(batch)
@@ -157,7 +164,7 @@ def main() -> None:
         
         # Handle remaining addresses
         if batch:
-            results = lookup_ais_batch(batch, session, max_workers=10)
+            results = lookup_ais_batch(batch, session, max_workers=300)
             for addr, opa in results.items():
                 save_ais_data(addr, opa)
             total += len(batch)
