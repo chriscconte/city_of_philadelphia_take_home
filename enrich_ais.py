@@ -45,8 +45,6 @@ def get_unique_addresses(batch_size: int = 1000) -> Generator[str, None, None]:
     while True:
         with sqlite3.connect(sqlite_db) as conn:
             cursor = conn.cursor()
-            # No OFFSET needed - already-enriched addresses are filtered out by the LEFT JOIN
-            # Each query returns the next batch of un-enriched addresses
             cursor.execute("""
                 SELECT DISTINCT p.address 
                 FROM public_cases_fc p
