@@ -11,8 +11,8 @@ This project downloads 311 service request data, enriches it with property infor
 ## Task List
 
 ### 1. Download 311 Tickets
-- [ ] Create a script to download 311 tickets for 2025 assigned to L&I
-- [ ] Add downloaded records to a local data store. 
+- [x] Create a script to download 311 tickets for 2025 assigned to L&I
+- [x] Add downloaded records to a local data store. 
 - [x] **Decision needed:** Storage format (Python pickle, SQLite, or PostgreSQL)
   - SQLite: Portable, queryable, good for ~50k records
 
